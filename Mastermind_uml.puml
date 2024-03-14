@@ -1,0 +1,478 @@
+@startuml Mastermind
+!theme reddress-darkgreen
+
+class Mastermind.App {
+    + <<create>> App()
+    + {static} main(args : String[*])
+}
+
+class Mastermind.controllers.BoardController {
+    + <<create>> BoardController(model : IBoard)
+    + setModel(model : IBoard)
+    + nextTurn()
+    + modifyBoardConfig(player : Player, difficulty : Difficulty, secretCodeSize : Integer, nbOfRounds : Integer, nbOfColors : Integer, maxNbOfTurn : Integer)
+    - createNewTurn()
+}
+
+class Mastermind.controllers.RoundController {
+    + <<create>> RoundController(model : IRound)
+    + modifyAttemptAt(PlayerPawn : Pawn, index : Integer)
+    - compare(secretCode : SecretCode) : Hint[*]
+    - modifyHint(hint : Hint[*])
+    - scoreCalculation() : Integer
+    + updateScore()
+    + check(secretCode : SecretCode)
+    + setModel(model : IRound)
+}
+
+class Mastermind.controllers.TurnController {
+    - turnNumber : Integer
+    + <<create>> TurnController(model : ITurn)
+    + nextRound()
+    - modifyScore()
+    + setModel(model : ITurn)
+    + resetAttempt()
+}
+
+class Mastermind.models.Attempt extends Mastermind.models.ModifiableCombination {
+    + <<create>> Attempt(pawns : IPawn[*])
+    # {readonly} {override} fill(pawns : IPawn[*])
+}
+
+class Mastermind.models.Board implements Mastermind.models.IBoard {
+    + <<create>> Board()
+    + {override} getPlayer() : IPlayer
+    + {override} getActualTurn() : ITurn
+    + {override} setActualTurn(turn : ITurn)
+    + {override} getConfig() : GameConfig
+    + {override} setConfig(config : GameConfig)
+    + {override} addObserver(observer : IBoardObserver)
+    + {override} removeObserver(observer : IBoardObserver)
+    + {override} notifyPlayer()
+    + {override} notifyTurn()
+}
+
+abstract Mastermind.models.Combination implements Mastermind.models.ICombination {
+    # <<create>> Combination(pawns : IPawn[*])
+    + {override} contains(pawn : IPawn) : Boolean
+    + {override} get(index : Integer) : IPawn
+    + {override} size() : Integer
+    # {abstract} {readonly} fill(pawns : IPawn[*])
+}
+
+class Mastermind.models.Correction extends Mastermind.models.ModifiableCombination {
+    + <<create>> Correction(pawns : IPawn[*])
+    # {readonly} {override} fill(pawns : IPawn[*])
+    + getWrongs() : Integer
+    + getMisplaced() : Integer
+    + getRights() : Integer
+}
+
+enum Mastermind.models.Difficulty {
+    Easy
+    Classic
+    Numeric
+}
+
+class Mastermind.models.GameConfig {
+    - secretCodeSize : Integer
+    - nbOfRounds : Integer
+    - nbOfTurns : Integer
+    - nbOfColors : Integer
+    + <<create>> GameConfig(player : Player, difficulty : Difficulty, secretCodeSize : Integer, nbOfRounds : Integer, nbOfColors : Integer, maxNbOfTurn : Integer)
+    + getPlayer() : Player
+    + getDifficulty() : Difficulty
+    + getSecretCodeSize() : Integer
+    + getNbOfRounds() : Integer
+    + getMaxNbOfTurns() : Integer
+    + getNbOfColors() : Integer
+    + getStrategyDraft() : CorrectionStrategy
+}
+
+class Mastermind.models.Hint extends Mastermind.models.Pawn {
+    + <<create>> Hint(color : PawnColor)
+}
+
+interface Mastermind.models.IBoard {
+    + {abstract} getPlayer() : IPlayer
+    + {abstract} getActualTurn() : ITurn
+    + {abstract} setActualTurn(turn : ITurn)
+    + {abstract} getConfig() : GameConfig
+    + {abstract} setConfig(config : GameConfig)
+    + {abstract} addObserver(IBoardObserver : IBoardObserver)
+    + {abstract} removeObserver(IBoardObserver : IBoardObserver)
+    + {abstract} notifyPlayer()
+    + {abstract} notifyTurn()
+}
+
+interface Mastermind.models.ICombination {
+    + {abstract} contains(pawn : IPawn) : Boolean
+    + {abstract} get(index : Integer) : IPawn
+    + {abstract} size() : Integer
+}
+
+interface Mastermind.models.IPawn {
+    + {abstract} getPColor() : PawnColor
+    + {abstract} getJColor() : Color
+}
+
+interface Mastermind.models.IPlayer {
+    + {abstract} getName() : String
+    + {abstract} getTotalScore() : Integer
+    + {abstract} setTotalScore(score : Integer)
+    + {abstract} getPlayedTurnsNumber() : Integer
+    + {abstract} setPlayedTurnsNumber(amount : Integer)
+}
+
+interface Mastermind.models.IRound {
+    + {abstract} getNumber() : Integer
+    + {abstract} getScore() : Integer
+    + {abstract} setScore(score : Integer)
+    + {abstract} getAttempt() : Attempt
+    + {abstract} setAttempt(attempt : Attempt)
+    + {abstract} getHints() : Correction
+    + {abstract} setHints(hints : Correction)
+    + {abstract} addObserver(roundView : RoundView)
+    + {abstract} removeObserver(roundView : RoundView)
+}
+
+interface Mastermind.models.ITurn {
+    + {abstract} getRounds() : IRound[*]
+    + {abstract} getSecretCodeSize() : Integer
+    + {abstract} getDifficulty() : Difficulty
+    + {abstract} getScoreTotal() : Integer
+    + {abstract} getSecretCode() : SecretCode
+    + {abstract} getNbOfColors() : Integer
+    + {abstract} getCurrentRound() : IRound
+    + {abstract} setCurrentRound(round : IRound)
+    + {abstract} getScore() : Integer
+    + {abstract} setScore(score : Integer)
+}
+
+abstract Mastermind.models.ModifiableCombination extends Mastermind.models.Combination {
+    # <<create>> ModifiableCombination(pawns : IPawn[*])
+    + set(pawns : IPawn[*])
+}
+
+abstract Mastermind.models.Pawn implements Mastermind.models.IPawn {
+    # <<create>> Pawn(color : PawnColor)
+    + {static} TranslateToJColor(pawnColor : PawnColor) : Color
+    + {static} TranslateToPColor(color : Color) : PawnColor
+    + {static} getEnumJColor(index : Integer) : Color
+    + {static} getEnumPColor(index : Integer) : PawnColor
+    + {override} getPColor() : PawnColor
+    + {override} getJColor() : Color
+}
+
+enum Mastermind.models.PawnColor {
+    RED
+    GREEN
+    BLUE
+    YELLOW
+    ORANGE
+    PINK
+    GRAY
+    BROWN
+    PURPLE
+    VIOLET
+    DUCKBLUE
+    AQUA
+    BLACK
+    WHITE
+}
+
+class Mastermind.models.Player implements Mastermind.models.IPlayer {
+    - name : String
+    - score : Integer
+    - turnsAlreadyPlayed : Integer
+    + <<create>> Player()
+    + <<create>> Player(name : String)
+    + {override} getName() : String
+    + {override} getTotalScore() : Integer
+    + {override} setTotalScore(score : Integer)
+    + {override} getPlayedTurnsNumber() : Integer
+    + {override} setPlayedTurnsNumber(amount : Integer)
+}
+
+class Mastermind.models.PlayerPawn extends Mastermind.models.Pawn {
+    + <<create>> PlayerPawn(color : PawnColor)
+}
+
+class Mastermind.models.Round implements Mastermind.models.IRound {
+    - number : Integer
+    - score : Integer
+    + <<create>> Round(number : Integer)
+    + {override} getNumber() : Integer
+    + {override} getScore() : Integer
+    + {override} setScore(score : Integer)
+    + {override} getAttempt() : Attempt
+    + {override} setAttempt(attempt : Attempt)
+    + {override} getHints() : Correction
+    + {override} setHints(hints : Correction)
+    + {override} addObserver(roundView : RoundView)
+    + {override} removeObserver(roundView : RoundView)
+    - notifyHints()
+    - notifyAttempts()
+}
+
+class Mastermind.models.SecretCode extends Mastermind.models.Combination {
+    + <<create>> SecretCode(pawns : IPawn[*])
+    # {readonly} {override} fill(pawns : IPawn[*])
+}
+
+class Mastermind.models.Turn implements Mastermind.models.ITurn {
+    - secretCodeSize : Integer
+    - colorPalletSize : Integer
+    - scoreTotal : Integer
+    + <<create>> Turn(difficulty : Difficulty, secretCode : SecretCode, rounds : IRound[*], colorPalletSize : Integer)
+    + {override} getRounds() : IRound[*]
+    + {override} getSecretCodeSize() : Integer
+    + {override} getDifficulty() : Difficulty
+    + {override} getScoreTotal() : Integer
+    + {override} getSecretCode() : SecretCode
+    + {override} getNbOfColors() : Integer
+    + {override} getCurrentRound() : IRound
+    + {override} setCurrentRound(round : IRound)
+    + {override} getScore() : Integer
+    + {override} setScore(score : Integer)
+}
+
+class Mastermind.models.TurnBuilder {
+    + <<create>> TurnBuilder()
+    - {static} generateSecretCode(size : Integer, dispersion : Integer) : SecretCode
+    - {static} generateRounds(nbRounds : Integer, secretCodeSize : Integer) : IRound[*]
+    + {static} createTurn(config : GameConfig) : Turn
+}
+
+interface Mastermind.observers.IBoardObserver {
+    + {abstract} updatePlayer(player : IPlayer)
+    + {abstract} updateActualTurn(turn : ITurn)
+}
+
+interface Mastermind.observers.IRoundObserver {
+    + {abstract} updateOneAttempt(attemptPawn : PlayerPawn)
+    + {abstract} updateOneAttempt(attempt : Attempt)
+    + {abstract} updateHints(hints : Correction)
+}
+
+class Mastermind.views.BlockButton extends Mastermind.views.CustomButton {
+    + <<create>> BlockButton(text : String, actionListener : ActionListener)
+}
+
+abstract Mastermind.views.BlockyCorrectionStrategy extends Mastermind.views.CorrectionStrategy {
+    + <<create>> BlockyCorrectionStrategy()
+    + {override} execute(size : Integer) : JPanel
+}
+
+class Mastermind.views.BlockyCorrectionView extends Mastermind.views.CorrectionView {
+    + <<create>> BlockyCorrectionView(size : Integer)
+    + getBlocksNumber() : Integer
+    + setColors(hint : Correction)
+    + setOneColor(pegIndex : Integer, color : Color)
+}
+
+class Mastermind.views.BoardView implements Mastermind.observers.IBoardObserver {
+    - nbTurn : Integer
+    + <<create>> BoardView(board : IBoard, controller : BoardController, home : Home)
+    + {override} updatePlayer(player : IPlayer)
+    + {override} updateActualTurn(turn : ITurn)
+    + hideAllExceptEnd()
+    + showAllExceptEnd()
+}
+
+class Mastermind.views.ClassicStrategy extends Mastermind.views.BlockyCorrectionStrategy {
+    + <<create>> ClassicStrategy()
+    + {override} getScoreBonus() : Integer
+    # {readonly} {override} updateValues(hints : Correction, view : CorrectionView)
+}
+
+class Mastermind.views.ColorChooser {
+    + <<create>> ColorChooser(availableColors : Color[*])
+    + setMediator(mediator : IColorMediator)
+    + update(color : Color)
+}
+
+class Mastermind.views.ColorMediator implements Mastermind.views.IColorMediator {
+    + <<create>> ColorMediator()
+    + setRoundView(roundView : RoundView)
+    + {override} update(color : Color)
+}
+
+class Mastermind.views.ConfigMenu extends Mastermind.views.RawPanel {
+    + <<create>> ConfigMenu(boardController : BoardController, home : Home)
+}
+
+abstract Mastermind.views.CorrectionStrategy {
+    # {readonly} activePanel : Integer
+    # {readonly} allIsInitialized : Boolean
+    # {readonly} lastToModify : Boolean
+    # <<create>> CorrectionStrategy()
+    + {abstract} execute(size : Integer) : JPanel
+    + update(hints : Correction)
+    + {abstract} getScoreBonus() : Integer
+    # {abstract} {readonly} updateValues(hints : Correction, view : CorrectionView)
+}
+
+class Mastermind.views.CorrectionView {
+    + unable : Boolean
+    + <<create>> CorrectionView()
+}
+
+class Mastermind.views.CustomButton {
+    + <<create>> CustomButton(text : String, actionListener : ActionListener)
+    + setButtonSize(width : Integer, height : Integer)
+}
+
+class Mastermind.views.CustomLabel {
+    + <<create>> CustomLabel(text : String)
+}
+
+class Mastermind.views.EasyStrategy extends Mastermind.views.BlockyCorrectionStrategy {
+    + <<create>> EasyStrategy()
+    + {override} getScoreBonus() : Integer
+    # {readonly} {override} updateValues(hints : Correction, view : CorrectionView)
+}
+
+class Mastermind.views.End {
+    + <<create>> End(win : Boolean, player : IPlayer, score : Integer, lastTurn : Boolean)
+}
+
+class Mastermind.views.Home extends Mastermind.views.RawPanel {
+    + <<create>> Home()
+}
+
+interface Mastermind.views.IColorMediator {
+    + {abstract} update(color : Color)
+    + {abstract} setRoundView(roundView : RoundView)
+}
+
+class Mastermind.views.MainWindow {
+    + <<create>> MainWindow(home : Home, game : BoardView, config : ConfigMenu)
+    - hideAll()
+    + showHome()
+    + showConfig()
+    + showGame()
+}
+
+class Mastermind.views.NumericHintPanel extends Mastermind.views.CorrectionView {
+    + <<create>> NumericHintPanel()
+    + setRightsNumber(number : Integer)
+    + setWrongsNumber(number : Integer)
+}
+
+class Mastermind.views.NumericStrategy extends Mastermind.views.CorrectionStrategy {
+    + <<create>> NumericStrategy()
+    + {override} execute(size : Integer) : JPanel
+    + {override} getScoreBonus() : Integer
+    # {readonly} {override} updateValues(hints : Correction, view : CorrectionView)
+}
+
+abstract Mastermind.views.RawPanel {
+    # <<create>> RawPanel(title : String)
+}
+
+class Mastermind.views.RoundView implements Mastermind.observers.IRoundObserver {
+    - indexButtonClicked : Integer
+    + <<create>> RoundView(round : IRound, controller : RoundController, hintsFormat : CorrectionStrategy)
+    - initializeGuessCircles(numPegs : Integer)
+    - createStyledButton() : BlockButton
+    - initializeFeedbackCircles(size : Integer, strategy : CorrectionStrategy)
+    + setGuessColor(pegIndex : Integer, color : Color)
+    - setAllAttemptsColors(attempt : Attempt)
+    + {override} updateOneAttempt(attemptPawn : PlayerPawn)
+    + {override} updateOneAttempt(attempt : Attempt)
+    + {override} updateHints(hints : Correction)
+}
+
+class Mastermind.views.TurnView {
+    - isLastTurn : Boolean
+    + <<create>> TurnView(turn : ITurn, turnController : TurnController, boardView : BoardView, boardController : BoardController)
+    + hideAll()
+    + showAll()
+    + setInfos(player : IPlayer, isLastTurn : Boolean)
+    - passToEnd(win : Boolean, player : IPlayer, score : Integer, lastTurn : Boolean)
+    - nextRound()
+}
+
+/' RELATIONS '/
+"Mastermind.controllers.BoardController""1" <.. "1""Mastermind.models.Player" : <<use>>
+"Mastermind.controllers.BoardController""1" <.. "1""Mastermind.models.Difficulty" : <<use>>
+
+"Mastermind.controllers.RoundController""1" <.. "1""Mastermind.models.Pawn" : <<use>>
+"Mastermind.controllers.RoundController""1" <.. "1""Mastermind.models.SecretCode" : <<use>>
+"Mastermind.controllers.RoundController""1" <.. "1""Mastermind.models.Hint" : <<use>>
+
+Mastermind.models.Player"1" <--o "1"GameConfig : -player
+Mastermind.models.Difficulty"1" <--o "1"GameConfig : -difficulty
+
+"Mastermind.models.ModifiableCombination""1" <.. "1""Mastermind.models.IPawn" : <<use>>
+"Mastermind.models.ICombination""1" <.. "1""Mastermind.models.IPawn" : <<use>>
+"Mastermind.models.ICombination""1" <.. "1""Mastermind.models.IPawn" : <<use>>
+"Mastermind.models.Correction""1" <.. "1""Mastermind.models.IPawn" : <<use>>
+
+Mastermind.models.IPlayer"1" <--o "1"Board : -player
+Mastermind.models.ITurn"1" <--o "1"Board : -actualTurn
+Mastermind.models.GameConfig"1" <--o "1"Board : -actualConfig
+
+Mastermind.models.Attempt"1" <--o "1"Round : -attempt
+Mastermind.models.Correction"1" <--o "1"Round : -hints
+"Mastermind.models.Round""1" <.. "1""Mastermind.views.RoundView" : <<use>>
+
+"Mastermind.models.SecretCode""1" <.. "1""Mastermind.models.IPawn" : <<use>>
+Mastermind.models.SecretCode"1" <--o "1"Turn : -secretCode
+Mastermind.models.Difficulty"1" <--o "1"Turn : -difficulty
+Mastermind.models.IRound"1" <--o "1"Turn : -currentRound
+
+"Mastermind.models.TurnBuilder""1" <.. "1""Mastermind.models.GameConfig" : <<use>>
+
+"Mastermind.views.BlockyCorrectionView""1" <.. "1""Mastermind.models.Correction" : <<use>>
+
+Mastermind.models.IBoard"1" <--o "1"BoardView : -board
+Mastermind.controllers.TurnController"1" <--o "1"BoardView : -turnController
+Mastermind.controllers.BoardController"1" <--o "1"BoardView : -controller
+Mastermind.views.TurnView"1" <--o "1"BoardView : -turnView
+
+Mastermind.views.ClassicStrategy"1" <.. "1""Mastermind.models.Correction" : <<use>>
+Mastermind.views.ClassicStrategy"1" <.. "1""Mastermind.views.CorrectionView" : <<use>>
+
+Mastermind.views.IColorMediator"1" <--o "1"ColorChooser : -mediator
+Mastermind.views.RoundView"1" <--o "1"ColorMediator : -roundView
+
+"Mastermind.views.CorrectionStrategy""1" <.. "1""Mastermind.models.Correction" : <<use>>
+"Mastermind.views.CorrectionStrategy""1" <.. "1""Mastermind.views.CorrectionView" : <<use>>
+
+"Mastermind.views.EasyStrategy""1" <.. "1""Mastermind.models.Correction" : <<use>>
+"Mastermind.views.EasyStrategy""1" <.. "1""Mastermind.views.CorrectionView" : <<use>>
+
+Mastermind.views.CustomButton"1" <--o "1"End : +nextTurnButton
+
+Mastermind.views.BoardView"1" <--o "1"MainWindow : -game
+Mastermind.views.ConfigMenu"1" <--o "1"MainWindow : -config
+Mastermind.views.Home"1" <--o "1"MainWindow : -home
+
+"Mastermind.views.NumericStrategy""1" <.. "1""Mastermind.models.Correction" : <<use>>
+"Mastermind.views.NumericStrategy""1" <.. "1""Mastermind.views.CorrectionView" : <<use>>
+
+Mastermind.views.CorrectionStrategy"1" <--o "1"RoundView : -hintsFormat
+Mastermind.controllers.RoundController"1" <--o "1"RoundView : -controller
+
+"Mastermind.views.RoundView""1" <.. "1""Mastermind.models.Attempt" : <<use>>
+"Mastermind.views.RoundView""1" <.. "1""Mastermind.models.PlayerPawn" : <<use>>
+"Mastermind.views.RoundView""1" <.. "1""Mastermind.models.Correction" : <<use>>
+
+Mastermind.views.BoardView"1" <--o "1"TurnView : -boardView
+Mastermind.controllers.BoardController"1" <--o "1"TurnView : -boardController
+Mastermind.views.RoundView"1" <--o "1"TurnView : -actualRoundView
+Mastermind.models.IPlayer"1" <--o "1"TurnView : -player
+
+Mastermind.views.MainWindow"1" *--> "1"Mastermind.App
+"Mastermind.views.BoardView""1" *--> "*"Mastermind.views.CustomLabel
+"Mastermind.views.End""1" *--> "*"Mastermind.views.CustomLabel
+"Mastermind.views.BoardView""1" *--> "*"Mastermind.views.CustomButton
+"Mastermind.views.TurnView""1" *--> "*""Mastermind.views.CustomButton"
+"Mastermind.views.End""1" *--> "*""Mastermind.views.CustomButton"
+
+Mastermind.models.IPawn"1" o--> PawnColor : - color
+
+@enduml
+
